@@ -1,51 +1,50 @@
 #include <windows.h>
 #include <string>
 
-// Функция симуляции нажатия символа
+// Функция симуляции нажатия Unicode-символа
 void SendUnicodeChar(wchar_t ch) {
-    INPUT input[2] = {};
-    
-    // Нажатие клавиши
-    input[0].type = INPUT_KEYBOARD;
-    input[0].ki.wVk = 0;
-    input[0].ki.wScan = ch;
-    input[0].ki.dwFlags = KEYEVENTF_UNICODE;
+    INPUT inputDown = { 0 };
+    inputDown.type = INPUT_KEYBOARD;
+    inputDown.ki.wVk = 0;
+    inputDown.ki.wScan = ch;
+    inputDown.ki.dwFlags = KEYEVENTF_UNICODE;
+    SendInput(1, &inputDown, sizeof(INPUT));
 
-    // Отпускание клавиши
-    input[1].type = INPUT_KEYBOARD;
-    input[1].ki.wVk = 0;
-    input[1].ki.wScan = ch;
-    input[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
-
-    SendInput(2, input, sizeof(INPUT));
+    INPUT inputUp = { 0 };
+    inputUp.type = INPUT_KEYBOARD;
+    inputUp.ki.wVk = 0;
+    inputUp.ki.wScan = ch;
+    inputUp.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+    SendInput(1, &inputUp, sizeof(INPUT));
 }
 
-// Функция нажатия клавиши Enter
+// Функция нажатия управляющей клавиши (Enter)
 void SendVirtualKey(WORD vk) {
-    INPUT input[2] = {};
+    INPUT inputDown = { 0 };
+    inputDown.type = INPUT_KEYBOARD;
+    inputDown.ki.wVk = vk;
+    inputDown.ki.wScan = 0;
+    inputDown.ki.dwFlags = 0;
+    SendInput(1, &inputDown, sizeof(INPUT));
 
-    // Нажатие
-    input[0].type = INPUT_KEYBOARD;
-    input[0].ki.wVk = vk;
-
-    // Отпускание
-    input[1].type = INPUT_KEYBOARD;
-    input[1].ki.wVk = vk;
-    input[1].ki.dwFlags = KEYEVENTF_KEYUP;
-
-    SendInput(2, input, sizeof(INPUT));
+    INPUT inputUp = { 0 };
+    inputUp.type = INPUT_KEYBOARD;
+    inputUp.ki.wVk = vk;
+    inputUp.ki.wScan = 0;
+    inputUp.ki.dwFlags = KEYEVENTF_KEYUP;
+    SendInput(1, &inputUp, sizeof(INPUT));
 }
 
-// Посимвольная печать текста
+// Посимвольная печать строки текста
 void TypeTextAndEnter(const std::wstring& text) {
-    for (wchar_t ch : text) {
-        SendUnicodeChar(ch);
+    for (size_t i = 0; i < text.length(); ++i) {
+        SendUnicodeChar(text[i]);
         Sleep(5);
     }
     SendVirtualKey(VK_RETURN);
 }
 
-// Чтение буфера обмена
+// Получение текста из буфера обмена Windows
 std::wstring GetClipboardTextW() {
     if (!IsClipboardFormatAvailable(CF_UNICODETEXT) || !OpenClipboard(nullptr)) {
         return L"";
