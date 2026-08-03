@@ -5,11 +5,13 @@
 void SendUnicodeChar(wchar_t ch) {
     INPUT input[2] = {};
     
+    // Нажатие клавиши
     input[0].type = INPUT_KEYBOARD;
     input[0].ki.wVk = 0;
     input[0].ki.wScan = ch;
     input[0].ki.dwFlags = KEYEVENTF_UNICODE;
 
+    // Отпускание клавиши
     input[1].type = INPUT_KEYBOARD;
     input[1].ki.wVk = 0;
     input[1].ki.wScan = ch;
@@ -22,9 +24,11 @@ void SendUnicodeChar(wchar_t ch) {
 void SendVirtualKey(WORD vk) {
     INPUT input[2] = {};
 
+    // Нажатие
     input[0].type = INPUT_KEYBOARD;
     input[0].ki.wVk = vk;
 
+    // Отпускание
     input[1].type = INPUT_KEYBOARD;
     input[1].ki.wVk = vk;
     input[1].ki.dwFlags = KEYEVENTF_KEYUP;
