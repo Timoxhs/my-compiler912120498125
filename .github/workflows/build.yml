@@ -10,13 +10,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+    - name: Initialize Visual Studio Environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
 
     - name: Compile DLL
       run: |
         cl.exe /LD dllmain.cpp /Fe:automation_core.dll user32.lib gdi32.lib /EHsc
-
+        
     - name: Upload DLL
       uses: actions/upload-artifact@v4
       with:
