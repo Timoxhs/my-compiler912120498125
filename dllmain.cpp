@@ -6,19 +6,19 @@
 #include <thread>
 #include <chrono>
 
-// ==================== НАСТРОЙКА КООРДИНАТ ====================
-// Координаты кнопки меню "Codes" — подставьте актуальные под своё разрешение
-constexpr int CODES_BUTTON_X = 1200;
-constexpr int CODES_BUTTON_Y = 800;
+// ==================== ВАШИ НАСТРОЕННЫЕ КООРДИНАТЫ ====================
+// Координаты кнопки меню "Codes" из Paint (190, 657)
+constexpr int CODES_BUTTON_X = 190;
+constexpr int CODES_BUTTON_Y = 657;
 
-// Координаты поля ввода "Code Here..."
-constexpr int CODE_INPUT_X = 960;
-constexpr int CODE_INPUT_Y = 540;
+// Координаты поля ввода "Code Here..." из Paint (950, 584)
+constexpr int CODE_INPUT_X = 950;
+constexpr int CODE_INPUT_Y = 584;
 
-constexpr int SUBMIT_BUTTON_X = 960; // Впишите свой X для Submit
-constexpr int SUBMIT_BUTTON_Y = 600; // Впишите свой Y для Submit
-
-// ==============================================================
+// Координаты кнопки подтверждения "Submit" из Paint (957, 675)
+constexpr int SUBMIT_BUTTON_X = 957;
+constexpr int SUBMIT_BUTTON_Y = 675;
+// ==============================================================================
 
 // Список триггерных слов/фраз (в верхнем регистре для сравнения)
 static const std::vector<std::wstring> kTriggers = {
@@ -134,57 +134,52 @@ std::wstring GetSourceText() {
 // Клик мышью по абсолютным координатам экрана
 void SimulateClick(int x, int y) {
     SetCursorPos(x, y);
-    INPUT inputs[2] = {};
-    inputs[0].type = INPUT_MOUSE;
-    inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-    inputs[1].type = INPUT_MOUSE;
-    inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+    INPUT inputs = {};
+    inputs.type = INPUT_MOUSE;
+    inputs.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+    inputs.type = INPUT_MOUSE;
+    inputs.mi.dwFlags = MOUSEEVENTF_LEFTUP;
     SendInput(2, inputs, sizeof(INPUT));
 }
 
 // Ввод одного unicode-символа
 void SimulateChar(wchar_t ch) {
-    INPUT inputs[2] = {};
-    inputs[0].type = INPUT_KEYBOARD;
-    inputs[0].ki.wScan = ch;
-    inputs[0].ki.dwFlags = KEYEVENTF_UNICODE;
-    inputs[1].type = INPUT_KEYBOARD;
-    inputs[1].ki.wScan = ch;
-    inputs[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
-    SendInput(2, inputs, sizeof(INPUT));
-}
-
-// Нажатие виртуальной клавиши (Enter)
-void SimulateKeyPress(WORD vk) {
-    INPUT inputs[2] = {};
-    inputs[0].type = INPUT_KEYBOARD;
-    inputs[0].ki.wVk = vk;
-    inputs[1].type = INPUT_KEYBOARD;
-    inputs[1].ki.wVk = vk;
-    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+    INPUT inputs = {};
+    inputs.type = INPUT_KEYBOARD;
+    inputs.ki.wScan = ch;
+    inputs.ki.dwFlags = KEYEVENTF_UNICODE;
+    inputs.type = INPUT_KEYBOARD;
+    inputs.ki.wScan = ch;
+    inputs.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
     SendInput(2, inputs, sizeof(INPUT));
 }
 
 // Логика автоматического открытия меню и ввода
 void OpenInterfaceAndInput(const std::wstring& code) {
+    // 1. Кликаем по кнопке Codes
     SimulateClick(CODES_BUTTON_X, CODES_BUTTON_Y);
     Sleep(50);
 
+    // 2. Кликаем по текстовому полю ввода
     SimulateClick(CODE_INPUT_X, CODE_INPUT_Y);
     Sleep(30);
 
-    for (wchar_t ch : code) {
-        SimulateChar(ch);
+    // 3. Печатаем промокод
+    for (size_t i = 0; i < code.length(); ++i) {
+        SimulateChar(code[i]);
         Sleep(15);
     }
-    SimulateKeyPress(VK_RETURN);
+    Sleep(30);
+
+    // 4. Кликаем по кнопке Submit для отправки
+    SimulateClick(SUBMIT_BUTTON_X, SUBMIT_BUTTON_Y);
 }
 
 // Главная логика фонового потока
 DWORD WINAPI WorkerThread(LPVOID lpParam) {
     std::wstring lastCode = L"";
     
-    // Считываем буфер при старте, чтобы не кликать впустую на старые логи
+    // Считываем буфер при старте, чтобы пропустить старые логи
     std::wstring initialText = GetSourceText();
     lastCode = ExtractPromoCode(initialText);
 
@@ -198,8 +193,8 @@ DWORD WINAPI WorkerThread(LPVOID lpParam) {
 
         // Если нашли в тексте новый промокод, который отличается от старого
         if (!extractedCode.empty() && extractedCode != lastCode) {
-            lastCode = extractedCode; // Запоминаем, чтобы не спамить в цикле
-            OpenInterfaceAndInput(extractedCode); // Выполняем авто-клики и ввод
+            lastCode = extractedCode; // Запоминаем, чтобы не спамить
+            OpenInterfaceAndInput(extractedCode); // Запускаем авто-ввод
         }
     }
     return 0;
