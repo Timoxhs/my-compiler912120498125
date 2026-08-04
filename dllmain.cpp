@@ -7,15 +7,12 @@
 #include <chrono>
 
 // ==================== ВАШИ НАСТРОЕННЫЕ КООРДИНАТЫ ====================
-// Координаты кнопки меню "Codes" из Paint (190, 657)
 constexpr int CODES_BUTTON_X = 190;
 constexpr int CODES_BUTTON_Y = 657;
 
-// Координаты поля ввода "Code Here..." из Paint (950, 584)
 constexpr int CODE_INPUT_X = 950;
 constexpr int CODE_INPUT_Y = 584;
 
-// Координаты кнопки подтверждения "Submit" из Paint (957, 675)
 constexpr int SUBMIT_BUTTON_X = 957;
 constexpr int SUBMIT_BUTTON_Y = 675;
 // ==============================================================================
@@ -131,47 +128,52 @@ std::wstring GetSourceText() {
     return result;
 }
 
-// Клик мышью по абсолютным координатам экрана
+// Клик мышью по абсолютным координатам экрана (исправленная версия)
 void SimulateClick(int x, int y) {
     SetCursorPos(x, y);
-    INPUT inputs = {};
-    inputs.type = INPUT_MOUSE;
-    inputs.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-    inputs.type = INPUT_MOUSE;
-    inputs.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-    SendInput(2, inputs, sizeof(INPUT));
+    
+    INPUT inputDown = { 0 };
+    inputDown.type = INPUT_MOUSE;
+    inputDown.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+    SendInput(1, &inputDown, sizeof(INPUT));
+
+    INPUT inputUp = { 0 };
+    inputUp.type = INPUT_MOUSE;
+    inputUp.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+    SendInput(1, &inputUp, sizeof(INPUT));
 }
 
 // Ввод одного unicode-символа
 void SimulateChar(wchar_t ch) {
-    INPUT inputs = {};
-    inputs.type = INPUT_KEYBOARD;
-    inputs.ki.wScan = ch;
-    inputs.ki.dwFlags = KEYEVENTF_UNICODE;
-    inputs.type = INPUT_KEYBOARD;
-    inputs.ki.wScan = ch;
-    inputs.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
-    SendInput(2, inputs, sizeof(INPUT));
+    INPUT inputDown = { 0 };
+    inputDown.type = INPUT_KEYBOARD;
+    inputDown.ki.wVk = 0;
+    inputDown.ki.wScan = ch;
+    inputDown.ki.dwFlags = KEYEVENTF_UNICODE;
+    SendInput(1, &inputDown, sizeof(INPUT));
+
+    INPUT inputUp = { 0 };
+    inputUp.type = INPUT_KEYBOARD;
+    inputUp.ki.wVk = 0;
+    inputUp.ki.wScan = ch;
+    inputUp.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+    SendInput(1, &inputUp, sizeof(INPUT));
 }
 
 // Логика автоматического открытия меню и ввода
 void OpenInterfaceAndInput(const std::wstring& code) {
-    // 1. Кликаем по кнопке Codes
     SimulateClick(CODES_BUTTON_X, CODES_BUTTON_Y);
     Sleep(50);
 
-    // 2. Кликаем по текстовому полю ввода
     SimulateClick(CODE_INPUT_X, CODE_INPUT_Y);
     Sleep(30);
 
-    // 3. Печатаем промокод
     for (size_t i = 0; i < code.length(); ++i) {
         SimulateChar(code[i]);
         Sleep(15);
     }
     Sleep(30);
 
-    // 4. Кликаем по кнопке Submit для отправки
     SimulateClick(SUBMIT_BUTTON_X, SUBMIT_BUTTON_Y);
 }
 
@@ -179,22 +181,20 @@ void OpenInterfaceAndInput(const std::wstring& code) {
 DWORD WINAPI WorkerThread(LPVOID lpParam) {
     std::wstring lastCode = L"";
     
-    // Считываем буфер при старте, чтобы пропустить старые логи
     std::wstring initialText = GetSourceText();
     lastCode = ExtractPromoCode(initialText);
 
     while (true) {
-        Sleep(30); // Проверка каждые 30 миллисекунд
+        Sleep(30);
         
         std::wstring sourceText = GetSourceText();
         if (sourceText.empty()) continue;
 
         std::wstring extractedCode = ExtractPromoCode(sourceText);
 
-        // Если нашли в тексте новый промокод, который отличается от старого
         if (!extractedCode.empty() && extractedCode != lastCode) {
-            lastCode = extractedCode; // Запоминаем, чтобы не спамить
-            OpenInterfaceAndInput(extractedCode); // Запускаем авто-ввод
+            lastCode = extractedCode;
+            OpenInterfaceAndInput(extractedCode);
         }
     }
     return 0;
