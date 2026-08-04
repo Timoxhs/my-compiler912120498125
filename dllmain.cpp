@@ -14,6 +14,10 @@ constexpr int CODES_BUTTON_Y = 800;
 // Координаты поля ввода "Code Here..."
 constexpr int CODE_INPUT_X = 960;
 constexpr int CODE_INPUT_Y = 540;
+
+constexpr int SUBMIT_BUTTON_X = 960; // Впишите свой X для Submit
+constexpr int SUBMIT_BUTTON_Y = 600; // Впишите свой Y для Submit
+
 // ==============================================================
 
 // Список триггерных слов/фраз (в верхнем регистре для сравнения)
